@@ -10,22 +10,23 @@
   outputs = { nixpkgs, flake-utils, gambit-nix, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { 
+        pkgs = import nixpkgs {
           inherit system;
           overlays = [ gambit-nix.overlays.default ];
         };
-        
+
         # Add your Gambit library dependencies here
         gambitDeps = [
           # inputs.some-gambit-lib
         ];
-      in {
+      in
+      {
         packages.default = pkgs.gambit-lib.buildGambitLibrary {
           name = "my-library";
           src = ./src;
           dependencies = gambitDeps;
         };
-        
+
         devShells.default = pkgs.gambit-lib.gambitDevShell {
           dependencies = gambitDeps;
         };

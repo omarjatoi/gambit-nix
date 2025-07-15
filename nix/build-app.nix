@@ -4,26 +4,26 @@
 , src
 , version ? "0.1.0"
 , main ? "main.scm"
-, dependencies ? []
+, dependencies ? [ ]
 , gambit ? pkgs.gambit
-, buildInputs ? []
-, nativeBuildInputs ? []
+, buildInputs ? [ ]
+, nativeBuildInputs ? [ ]
 , buildPhase ? null
 , installPhase ? null
-, meta ? {}
+, meta ? { }
 }:
 
 pkgs.stdenv.mkDerivation {
   pname = name;
   inherit version src;
-  
+
   nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
   buildInputs = dependencies ++ buildInputs;
-  
+
   # Set up environment at derivation level
   LIBRARY_PATH = "${pkgs.openssl.out}/lib";
   GAMBIT_GSC_PATH = pkgs.lib.concatMapStringsSep ":" (dep: "${dep}") dependencies;
-  
+
   buildPhase = if buildPhase != null then buildPhase else ''
     runHook preBuild
     
@@ -36,14 +36,14 @@ pkgs.stdenv.mkDerivation {
     gsc -exe -o "${name}" "${main}"
     runHook postBuild
   '';
-  
+
   installPhase = if installPhase != null then installPhase else ''
     runHook preInstall
     mkdir -p $out/bin
     install -m755 "${name}" $out/bin/
     runHook postInstall
   '';
-  
+
   meta = {
     description = "Gambit Scheme application: ${name}";
     platforms = pkgs.lib.platforms.unix;

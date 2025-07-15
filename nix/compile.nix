@@ -4,16 +4,17 @@
 { src
 , gambit ? pkgs.gambit
 , output ? null
-, flags ? []
-, dependencies ? []
+, flags ? [ ]
+, dependencies ? [ ]
 }:
 
 let
-  outputName = if output != null then output else 
-    builtins.replaceStrings [".scm"] [".o1"] (baseNameOf src);
+  outputName = if output != null then output else
+  builtins.replaceStrings [ ".scm" ] [ ".o1" ] (baseNameOf src);
 in
 
-pkgs.runCommand outputName {
+pkgs.runCommand outputName
+{
   nativeBuildInputs = [ gambit ];
   GAMBIT_GSC_PATH = pkgs.lib.concatMapStringsSep ":" (dep: "${dep}") dependencies;
   LIBRARY_PATH = "${pkgs.openssl.out}/lib";
