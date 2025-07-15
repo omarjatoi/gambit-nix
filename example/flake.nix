@@ -16,14 +16,14 @@
         };
 
         # Build the print library
-        print-lib = pkgs.gambit-lib.buildGambitLibrary {
+        print-lib = pkgs.gambit-overlay.buildGambitLibrary {
           name = "print";
           src = ./lib;
         };
       in
       {
         packages = {
-          default = pkgs.gambit-lib.buildGambitApp {
+          default = pkgs.gambit-overlay.buildGambitApp {
             name = "hello-world";
             src = ./src;
             main = "app.scm";
@@ -34,7 +34,7 @@
           print = print-lib;
         };
 
-        devShells.default = pkgs.gambit-lib.gambitDevShell {
+        devShells.default = pkgs.gambit-overlay.gambitDevShell {
           dependencies = [ print-lib ];
         };
 

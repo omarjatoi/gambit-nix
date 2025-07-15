@@ -21,13 +21,13 @@
         ];
       in
       {
-        packages.default = pkgs.gambit-lib.buildGambitApp {
+        packages.default = pkgs.gambit-overlay.buildGambitApp {
           name = "my-app";
           src = ./.;
           dependencies = gambitDeps;
         };
 
-        devShells.default = pkgs.gambit-lib.gambitDevShell {
+        devShells.default = pkgs.gambit-overlay.gambitDevShell {
           dependencies = gambitDeps;
         };
 
