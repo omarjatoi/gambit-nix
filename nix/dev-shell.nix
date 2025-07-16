@@ -20,8 +20,6 @@ pkgs.mkShell {
 
   # Set up environment consistently with build functions
   LIBRARY_PATH = "${pkgs.openssl.out}/lib";
-  GAMBIT_GSC_PATH = pkgs.lib.concatMapStringsSep ":" (dep: "${dep}") dependencies;
-  GAMBIT_GSI_PATH = pkgs.lib.concatMapStringsSep ":" (dep: "${dep}") dependencies;
 
   shellHook = ''
     alias gsi='rlwrap gsi'
