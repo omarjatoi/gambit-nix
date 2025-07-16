@@ -20,9 +20,7 @@ pkgs.stdenv.mkDerivation {
   nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
   buildInputs = dependencies ++ buildInputs;
 
-  # Set up environment at derivation level
   LIBRARY_PATH = "${pkgs.openssl.out}/lib";
-  GAMBIT_GSC_PATH = pkgs.lib.concatMapStringsSep ":" (dep: "${dep}") dependencies;
 
   buildPhase = if buildPhase != null then buildPhase else ''
     runHook preBuild

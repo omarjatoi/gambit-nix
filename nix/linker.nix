@@ -33,7 +33,6 @@ in
 pkgs.runCommand outputName
 {
   nativeBuildInputs = [ gambit ];
-  GAMBIT_GSC_PATH = pkgs.lib.concatMapStringsSep ":" (lib: "${lib}") libraries;
   LIBRARY_PATH = "${pkgs.openssl.out}/lib";
 } ''
   # Link all objects together

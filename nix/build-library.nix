@@ -20,9 +20,7 @@ pkgs.stdenv.mkDerivation {
   buildInputs = buildInputs;
   propagatedBuildInputs = dependencies;
 
-  # Set up environment at derivation level
   LIBRARY_PATH = "${pkgs.openssl.out}/lib";
-  GAMBIT_GSC_PATH = pkgs.lib.concatMapStringsSep ":" (dep: "${dep}") dependencies;
 
   buildPhase = if buildPhase != null then buildPhase else ''
     runHook preBuild
@@ -36,14 +34,6 @@ pkgs.stdenv.mkDerivation {
     find . -name "*.o[0-9]*" -exec install -m644 {} $out/ \;
     find . -name "*.scm" -exec install -m644 {} $out/ \;
     runHook postInstall
-  '';
-
-  # Setup hook to add this library to Gambit search paths
-  setupHook = pkgs.writeText "setup-hook.sh" ''
-    addGambitPath() {
-      export GAMBIT_GSC_PATH="$1:''${GAMBIT_GSC_PATH-}"
-    }
-    addEnvHooks "$hostOffset" addGambitPath
   '';
 
   meta = {

@@ -16,7 +16,6 @@ in
 pkgs.runCommand outputName
 {
   nativeBuildInputs = [ gambit ];
-  GAMBIT_GSC_PATH = pkgs.lib.concatMapStringsSep ":" (dep: "${dep}") dependencies;
   LIBRARY_PATH = "${pkgs.openssl.out}/lib";
 } ''
   # Copy source file to build directory
