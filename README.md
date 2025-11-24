@@ -47,26 +47,26 @@ Define your library derivation. Source files (`.sld`, `.scm`) are installed to t
 
 You can include libraries from Git repositories by adding them to your `flake.nix` inputs.
 
-**Library is a Nix Flake**
+- **Library is a Nix Flake**
 
-```nix
-inputs.gambit-library-flake.url = "github:user/repo";
+  ```nix
+  inputs.gambit-library-flake.url = "github:user/repo";
+  
+  # ... inside buildGambitApp ...
+  dependencies = [ inputs.gambit-library-flake.packages.${system}.default ];
+  ```
 
-# ... inside buildGambitApp ...
-dependencies = [ inputs.gambit-library-flake.packages.${system}.default ];
-```
+- **Non-nix Gambit Library**
 
-**Non-nix Gambit Library**
-
-```nix
-inputs.gambit-library-src.url = "github:user/repo";
-
-# ... inside outputs ...
-remote-lib = pkgs.gambit-overlay.buildGambitLibrary {
-  name = "remote-lib";
-  src = inputs.gambit-library-src;
-};
-```
+  ```nix
+  inputs.gambit-library-src.url = "github:user/repo";
+  
+  # ... inside outputs ...
+  remote-lib = pkgs.gambit-overlay.buildGambitLibrary {
+    name = "remote-lib";
+    src = inputs.gambit-library-src;
+  };
+  ```
 
 ### Development Shell
 
