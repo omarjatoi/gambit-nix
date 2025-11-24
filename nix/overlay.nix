@@ -1,5 +1,5 @@
 final: prev: {
-  gambit-overlay= {
+  gambit-overlay = {
     # Build a Gambit Scheme library
     buildGambitLibrary = import ./build-library.nix { pkgs = final; };
 
