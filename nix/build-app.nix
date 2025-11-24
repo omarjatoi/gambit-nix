@@ -20,37 +20,61 @@ pkgs.stdenv.mkDerivation {
   nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
   buildInputs = dependencies ++ buildInputs ++ [ pkgs.openssl ];
 
-  # Ensure linker can find OpenSSL if Gambit was built with it
   LIBRARY_PATH = "${pkgs.lib.getLib pkgs.openssl}/lib";
 
   buildPhase = if buildPhase != null then buildPhase else ''
     runHook preBuild
 
-    # Create a writable directory for modules to avoid "Permission denied"
-    # when gsc tries to write intermediate .c files next to sources.
-    mkdir -p _gambit_modules
+    echo "Scanning dependencies for Gambit modules..."
 
-    # Copy dependency modules into the writable directory
-    ${pkgs.lib.concatMapStringsSep "\n" (dep: ''
-      if [ -d "${dep}/share/gambit/modules" ]; then
-        # Use cp -L to follow symlinks and copy actual content
-        cp -L -r "${dep}/share/gambit/modules/." _gambit_modules/
+    SEARCH_FLAGS=""
+    DEP_C_FILES=""
+    DEP_O_FILES=""
+
+    # Iterate over all inputs to find Gambit artifacts
+    # This includes direct and propagated dependencies found in buildInputs
+    for dep in $buildInputs; do
+      # 1. Search Paths (for source visibility during compilation)
+      if [ -d "$dep/share/gambit/modules" ]; then
+        SEARCH_FLAGS="$SEARCH_FLAGS -:search=$dep/share/gambit/modules"
       fi
-    '') dependencies}
 
-    # Ensure the copied files are writable
-    chmod -R u+w _gambit_modules
+      # 2. Pre-compiled Objects and C files (for linking)
+      if [ -d "$dep/lib/gambit/modules" ]; then
+        echo "Found compiled modules in $dep"
+        # Find all .c and .o files. Sort them to ensure deterministic order within the lib.
+        # We accumulate them to pass to the linker.
+        c_found=$(find "$dep/lib/gambit/modules" -name "*.c" | sort)
+        o_found=$(find "$dep/lib/gambit/modules" -name "*.o" | sort)
 
-    # Find all dependency source files (scheme libraries)
-    # We explicitly compile these into the executable to ensure static linking
-    DEP_SOURCES=$(find _gambit_modules -type f \( -name "*.sld" -o -name "*.scm" \) | sort)
+        DEP_C_FILES="$DEP_C_FILES $c_found"
+        DEP_O_FILES="$DEP_O_FILES $o_found"
+      fi
+    done
 
-    # Compile the executable
-    # Runtime options (starting with -:) must come first
-    # -:search=DIR: add DIR to list of directories to search for included/imported files
-    # -exe: create executable
-    # -o: output file
-    gsc -:search=$(pwd)/_gambit_modules -exe -o "${name}" $DEP_SOURCES "${main}"
+    echo "Compiling application..."
+    APP_BASENAME=$(basename "${main}" .scm)
+
+    # Compile main source to C
+    # We rely on SEARCH_FLAGS to resolve (import ...) statements to .sld files in dependencies
+    gsc $SEARCH_FLAGS -c -o "$APP_BASENAME.c" "${main}"
+
+    # Compile main C to Object
+    gsc -obj -o "$APP_BASENAME.o" "$APP_BASENAME.c"
+
+    echo "Linking application..."
+
+    # Generate Link File (contains initialization logic)
+    # Must include ALL C files (dependencies + app)
+    # Dependency order is approximated by buildInputs order + local sort
+    gsc -link -o "${name}_.c" $DEP_C_FILES "$APP_BASENAME.c"
+
+    # Compile Link File
+    gsc -obj -o "${name}_.o" "${name}_.c"
+
+    # Create Final Executable
+    # Links all objects (dependencies + app + linker_obj)
+    gsc -exe -o "${name}" $DEP_O_FILES "$APP_BASENAME.o" "${name}_.o"
 
     runHook postBuild
   '';
