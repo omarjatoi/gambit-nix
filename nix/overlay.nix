@@ -8,9 +8,5 @@ final: prev: {
 
     # Create development shell with Gambit tooling
     gambitDevShell = import ./dev-shell.nix { pkgs = final; };
-
-    # Utility functions
-    compileGambit = import ./compile.nix { pkgs = final; };
-    linkGambitLibs = import ./linker.nix { pkgs = final; };
   };
 }

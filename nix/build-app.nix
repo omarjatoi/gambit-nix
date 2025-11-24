@@ -18,20 +18,32 @@ pkgs.stdenv.mkDerivation {
   inherit version src;
 
   nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
-  buildInputs = dependencies ++ buildInputs;
+  buildInputs = dependencies ++ buildInputs ++ [ pkgs.openssl ];
 
-  LIBRARY_PATH = "${pkgs.openssl.out}/lib";
+  # Ensure linker can find OpenSSL if Gambit was built with it
+  LIBRARY_PATH = "${pkgs.lib.getLib pkgs.openssl}/lib";
 
   buildPhase = if buildPhase != null then buildPhase else ''
     runHook preBuild
-    
-    # Copy dependency files to namespaced subdirectories
+
+    # Construct search paths for Gambit modules from dependencies
+    # We look for the 'share/gambit/modules' directory in each dependency
+
+    SEARCH_FLAGS=""
     ${pkgs.lib.concatMapStringsSep "\n" (dep: ''
-      mkdir -p "${dep.name or (builtins.baseNameOf dep)}"
-      cp -r ${dep}/* "${dep.name or (builtins.baseNameOf dep)}/"
+      if [ -d "${dep}/share/gambit/modules" ]; then
+        SEARCH_FLAGS="$SEARCH_FLAGS -:search=${dep}/share/gambit/modules"
+      fi
     '') dependencies}
-    
-    gsc -exe -o "${name}" "${main}"
+
+    echo "Building ${name} with search flags: $SEARCH_FLAGS"
+
+    # Compile the executable
+    # -exe: create executable
+    # -o: output file
+    # -:search=DIR: add DIR to list of directories to search for included/imported files
+    gsc $SEARCH_FLAGS -exe -o "${name}" "${main}"
+
     runHook postBuild
   '';
 

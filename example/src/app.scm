@@ -1,5 +1,8 @@
-;; Simple hello world app
-(include "print-0.1.0/print.scm")
+(import (scheme base)
+        (scheme write)
+        (print))
 
-(println (hello-message "World"))
-(println (fancy-hello "Nix and Gambit!"))
+(display (hello-message "World"))
+(newline)
+(display (fancy-hello "Nix and Gambit!"))
+(newline)
