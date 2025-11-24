@@ -26,23 +26,31 @@ pkgs.stdenv.mkDerivation {
   buildPhase = if buildPhase != null then buildPhase else ''
     runHook preBuild
 
-    # Construct search paths for Gambit modules from dependencies
-    # We look for the 'share/gambit/modules' directory in each dependency
+    # Create a writable directory for modules to avoid "Permission denied"
+    # when gsc tries to write intermediate .c files next to sources.
+    mkdir -p _gambit_modules
 
-    SEARCH_FLAGS=""
+    # Copy dependency modules into the writable directory
     ${pkgs.lib.concatMapStringsSep "\n" (dep: ''
       if [ -d "${dep}/share/gambit/modules" ]; then
-        SEARCH_FLAGS="$SEARCH_FLAGS -:search=${dep}/share/gambit/modules"
+        # Use cp -L to follow symlinks and copy actual content
+        cp -L -r "${dep}/share/gambit/modules/." _gambit_modules/
       fi
     '') dependencies}
 
-    echo "Building ${name} with search flags: $SEARCH_FLAGS"
+    # Ensure the copied files are writable
+    chmod -R u+w _gambit_modules
+
+    # Find all dependency source files (scheme libraries)
+    # We explicitly compile these into the executable to ensure static linking
+    DEP_SOURCES=$(find _gambit_modules -type f \( -name "*.sld" -o -name "*.scm" \) | sort)
 
     # Compile the executable
+    # Runtime options (starting with -:) must come first
+    # -:search=DIR: add DIR to list of directories to search for included/imported files
     # -exe: create executable
     # -o: output file
-    # -:search=DIR: add DIR to list of directories to search for included/imported files
-    gsc $SEARCH_FLAGS -exe -o "${name}" "${main}"
+    gsc -:search=$(pwd)/_gambit_modules -exe -o "${name}" $DEP_SOURCES "${main}"
 
     runHook postBuild
   '';
