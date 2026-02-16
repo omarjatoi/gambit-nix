@@ -79,13 +79,15 @@ pkgs.stdenv.mkDerivation {
   installPhase = if installPhase != null then installPhase else ''
     runHook preInstall
 
-    # Install .sld sources for import resolution during downstream compilation
+    # Install sources for import resolution during downstream compilation.
+    # Both .sld and .scm files are needed: .sld for module resolution,
+    # .scm for (include ...) directives within .sld files.
     mkdir -p $out/share/gambit/modules
-    find . -name "*.sld" -type f | while read -r sld; do
-      rel="''${sld#./}"
+    find . -type f \( -name "*.sld" -o -name "*.scm" \) | while read -r src; do
+      rel="''${src#./}"
       dir=$(dirname "$rel")
       mkdir -p "$out/share/gambit/modules/$dir"
-      cp "$sld" "$out/share/gambit/modules/$rel"
+      cp "$src" "$out/share/gambit/modules/$rel"
     done
 
     # Install .c and .o files for static linking
