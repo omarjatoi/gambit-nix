@@ -7,8 +7,16 @@
     gambit-nix.url = "path:.."; # normally would be "github:omarjatoi/gambit-nix"
   };
 
-  outputs = { self, nixpkgs, flake-utils, gambit-nix, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      gambit-nix,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -41,5 +49,6 @@
         apps.default = flake-utils.lib.mkApp {
           drv = self.packages.${system}.default;
         };
-      });
+      }
+    );
 }

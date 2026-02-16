@@ -1,17 +1,15 @@
 { pkgs }:
 
-{ name ? "gambit-dev"
-, dependencies ? [ ]
-, gambit ? pkgs.gambit
-, extraPackages ? [ ]
-, shellHook ? ""
+{
+  name ? "gambit-dev",
+  dependencies ? [ ],
+  gambit ? pkgs.gambit,
+  extraPackages ? [ ],
+  shellHook ? "",
 }:
 
 let
-  resolveDep = dep:
-    if dep ? packages
-    then dep.packages.${pkgs.system}.default
-    else dep;
+  resolveDep = dep: if dep ? packages then dep.packages.${pkgs.system}.default else dep;
   resolvedDeps = map resolveDep dependencies;
 in
 
@@ -21,7 +19,9 @@ pkgs.mkShell {
   buildInputs = [
     gambit
     pkgs.rlwrap # Better REPL experience
-  ] ++ resolvedDeps ++ extraPackages;
+  ]
+  ++ resolvedDeps
+  ++ extraPackages;
 
   shellHook = ''
     # Calculate search paths from dependencies

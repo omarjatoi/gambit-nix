@@ -6,26 +6,32 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem
-      (system:
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [ self.overlays.default ];
-          };
-        in
-        {
-          # Development shell for working on gambit-nix itself
-          devShells.default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              gambit
-              nixpkgs-fmt
-              nil # Nix LSP
-            ];
-          };
-        }
-      ) // {
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+        };
+      in
+      {
+        # Development shell for working on gambit-nix itself
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            gambit
+            nixfmt-rfc-style
+            nil # Nix LSP
+          ];
+        };
+      }
+    )
+    // {
       # Main overlay providing Gambit build functions
       overlays.default = import ./nix/overlay.nix;
 
