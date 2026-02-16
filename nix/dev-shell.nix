@@ -13,14 +13,7 @@ pkgs.mkShell {
   buildInputs = [
     gambit
     pkgs.rlwrap # Better REPL experience
-    pkgs.nixpkgs-fmt # Nix formatting
-    pkgs.nil # Nix LSP
-    pkgs.gdb
-    pkgs.openssl
   ] ++ dependencies ++ extraPackages;
-
-  # Set up environment consistently with build functions
-  LIBRARY_PATH = "${pkgs.lib.getLib pkgs.openssl}/lib";
 
   shellHook = ''
     # Calculate search paths from dependencies

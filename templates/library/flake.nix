@@ -7,7 +7,7 @@
     gambit-nix.url = "github:omarjatoi/gambit-nix";
   };
 
-  outputs = { nixpkgs, flake-utils, gambit-nix, ... }@inputs:
+  outputs = { self, nixpkgs, flake-utils, gambit-nix, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -21,13 +21,13 @@
         ];
       in
       {
-        packages.default = pkgs.gambit-lib.buildGambitLibrary {
+        packages.default = pkgs.gambit-overlay.buildGambitLibrary {
           name = "my-library";
           src = ./src;
           dependencies = gambitDeps;
         };
 
-        devShells.default = pkgs.gambit-lib.gambitDevShell {
+        devShells.default = pkgs.gambit-overlay.gambitDevShell {
           dependencies = gambitDeps;
         };
       });

@@ -4,73 +4,76 @@ Nix build system for [Gambit Scheme](https://gambitscheme.org/) with an overlay 
 
 ## Features
 
-*   **Nix Overlay**: Easy integration into existing Nix projects.
-*   **R7RS Support**: First-class support for R7RS library definitions (`define-library`).
-*   **Cached Compilation**: Libraries are compiled to C/Object files once and reused across applications.
-*   **Static Linking**: Applications are statically linked with their dependencies for easy distribution.
-*   **Development Shell**: Provides a pre-configured `gsi` REPL with access to your project's dependencies.
+*   **Nix Overlay**: Integration into existing Nix projects via a single overlay.
+*   **R7RS Support**: First-class support for R7RS library definitions (`.sld` files using `define-library`).
+*   **Cached Compilation**: Libraries are compiled to C and object files once and reused across application builds.
+*   **Static Linking**: Applications are statically linked with their dependencies.
+*   **Development Shell**: Pre-configured `gsi` REPL with access to your project's dependencies.
 
 ## Usage
 
-Add `gambit-nix` to your `flake.nix` inputs and apply the overlay.
-
-### Applications
-
-Define your application derivation and list your libraries in `dependencies`.
+Add `gambit-nix` to your `flake.nix` inputs and apply the overlay:
 
 ```nix
-my-app = pkgs.gambit-overlay.buildGambitApp {
-  name = "my-app";
-  src = ./src;
-  main = "main.scm";  # Entry point
-  dependencies = [ my-lib ];
+inputs.gambit-nix.url = "github:omarjatoi/gambit-nix";
+
+# inside outputs:
+pkgs = import nixpkgs {
+  inherit system;
+  overlays = [ gambit-nix.overlays.default ];
 };
 ```
 
 ### Libraries
 
-Define your library derivation. Source files (`.sld`, `.scm`) are installed to the search path and compiled to object files.
+Libraries must use R7RS `define-library` in `.sld` files. The build compiles each `.sld` to C and object files for static linking, and installs the sources for downstream import resolution.
 
 ```nix
-{
-  # ...
-  outputs = { self, nixpkgs, gambit-nix, ... }: {
-    # ...
-    my-lib = pkgs.gambit-overlay.buildGambitLibrary {
-      name = "my-lib";
-      src = ./lib; # Directory containing .sld files
-    };
-  };
-}
+my-lib = pkgs.gambit-overlay.buildGambitLibrary {
+  name = "my-lib";
+  src = ./lib; # Directory containing .sld files
+};
 ```
-#### Git Dependencies
 
-You can include libraries from Git repositories by adding them to your `flake.nix` inputs.
+### Applications
 
-- **Library is a Nix Flake**
+```nix
+my-app = pkgs.gambit-overlay.buildGambitApp {
+  name = "my-app";
+  src = ./src;
+  main = "main.scm";  # Entry point (default: main.scm)
+  dependencies = [ my-lib ];
+};
+```
 
-  ```nix
-  inputs.gambit-library-flake.url = "github:user/repo";
-  
-  # ... inside buildGambitApp ...
-  dependencies = [ inputs.gambit-library-flake.packages.${system}.default ];
-  ```
+The app build compiles only the application source. Pre-compiled dependency objects are linked directly from the Nix store without recompilation.
 
-- **Non-nix Gambit Library**
+### Git Dependencies
 
-  ```nix
-  inputs.gambit-library-src.url = "github:user/repo";
-  
-  # ... inside outputs ...
-  remote-lib = pkgs.gambit-overlay.buildGambitLibrary {
-    name = "remote-lib";
-    src = inputs.gambit-library-src;
-  };
-  ```
+Include libraries from Git repositories by adding them to your `flake.nix` inputs.
+
+**Library is a Nix Flake:**
+
+```nix
+inputs.some-lib.url = "github:user/repo";
+
+# inside buildGambitApp:
+dependencies = [ inputs.some-lib.packages.${system}.default ];
+```
+
+**Non-Nix Gambit library:**
+
+```nix
+inputs.some-lib-src.url = "github:user/repo";
+
+# inside outputs:
+some-lib = pkgs.gambit-overlay.buildGambitLibrary {
+  name = "some-lib";
+  src = inputs.some-lib-src;
+};
+```
 
 ### Development Shell
-
-Get a shell with `gsi` and `gsc` configured to find your dependencies.
 
 ```nix
 devShells.default = pkgs.gambit-overlay.gambitDevShell {
@@ -78,8 +81,9 @@ devShells.default = pkgs.gambit-overlay.gambitDevShell {
 };
 ```
 
-Inside the shell:
-```bash
+Inside the shell, `gsi` and `gsc` are wrapped with the correct search paths:
+
+```
 $ gsi
 > (import (my-lib))
 > (my-function ...)

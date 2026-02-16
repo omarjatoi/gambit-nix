@@ -20,8 +20,6 @@ pkgs.stdenv.mkDerivation {
   buildInputs = buildInputs;
   propagatedBuildInputs = dependencies;
 
-  LIBRARY_PATH = "${pkgs.lib.getLib pkgs.openssl}/lib";
-
   # This setup hook ensures that this library's path is added to GAMBIT_LOAD_PATH
   # when it is used as a dependency.
   setupHook = pkgs.writeText "gambit-setup-hook.sh" ''
@@ -36,32 +34,33 @@ pkgs.stdenv.mkDerivation {
   buildPhase = if buildPhase != null then buildPhase else ''
     runHook preBuild
 
-    # Prepare search path for compilation (including dependencies)
+    # Build -:search= flags from dependencies (for inter-library imports)
     SEARCH_FLAGS=""
     ${pkgs.lib.concatMapStringsSep "\n" (dep: ''
       if [ -d "${dep}/share/gambit/modules" ]; then
-        SEARCH_FLAGS="$SEARCH_FLAGS -:search=${dep}/share/gambit/modules"
+        SEARCH_FLAGS="$SEARCH_FLAGS,search=${dep}/share/gambit/modules"
       fi
     '') dependencies}
 
     mkdir -p build_artifacts
 
-    # Find all Scheme files
-    find . -type f \( -name "*.sld" -o -name "*.scm" \) | while read -r file; do
-      rel_path=''${file#./}
-      base_name=$(basename "$rel_path" | sed 's/\.[^.]*$//')
-      dir_name=$(dirname "$rel_path")
+    # Compile each .sld module for static linking.
+    # gsc -c produces .c files with the correct linker IDs for gsc -link.
+    find . -name "*.sld" -type f | while read -r sld; do
+      rel="''${sld#./}"
+      base=$(basename "$rel" .sld)
+      dir=$(dirname "$rel")
 
-      mkdir -p "build_artifacts/$dir_name"
+      mkdir -p "build_artifacts/$dir"
+      echo "Compiling $rel"
 
-      echo "Compiling $file ..."
+      # Scheme -> C for static linking.
+      # -:search= flags (deps + current tree) must come first,
+      # then -c -o controls output location.
+      gsc "-:search=$(pwd)$SEARCH_FLAGS" -c -o "build_artifacts/$dir/$base.c" "$sld"
 
-      # Compile to C
-      # We output the C file to the artifacts directory
-      gsc $SEARCH_FLAGS -c -o "build_artifacts/$dir_name/$base_name.c" "$file"
-
-      # Compile C to Object
-      gsc -obj -o "build_artifacts/$dir_name/$base_name.o" "build_artifacts/$dir_name/$base_name.c"
+      # C -> Object
+      gsc -obj "build_artifacts/$dir/$base.c"
     done
 
     runHook postBuild
@@ -70,13 +69,16 @@ pkgs.stdenv.mkDerivation {
   installPhase = if installPhase != null then installPhase else ''
     runHook preInstall
 
-    # Install sources to share/gambit/modules (for static analysis / macro expansion)
+    # Install .sld sources for import resolution during downstream compilation
     mkdir -p $out/share/gambit/modules
-    cp -r ./* $out/share/gambit/modules/
-    # Remove the build artifacts from the source tree copy if they were created there
-    rm -rf $out/share/gambit/modules/build_artifacts
+    find . -name "*.sld" -type f | while read -r sld; do
+      rel="''${sld#./}"
+      dir=$(dirname "$rel")
+      mkdir -p "$out/share/gambit/modules/$dir"
+      cp "$sld" "$out/share/gambit/modules/$rel"
+    done
 
-    # Install compiled objects and C files to lib/gambit/modules
+    # Install .c and .o files for static linking
     mkdir -p $out/lib/gambit/modules
     cp -r build_artifacts/* $out/lib/gambit/modules/
 

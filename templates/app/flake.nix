@@ -7,7 +7,7 @@
     gambit-nix.url = "github:omarjatoi/gambit-nix";
   };
 
-  outputs = { nixpkgs, flake-utils, gambit-nix, ... }@inputs:
+  outputs = { self, nixpkgs, flake-utils, gambit-nix, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -32,7 +32,7 @@
         };
 
         apps.default = flake-utils.lib.mkApp {
-          drv = inputs.self.packages.${system}.default;
+          drv = self.packages.${system}.default;
         };
       });
 }

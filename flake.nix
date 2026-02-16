@@ -29,9 +29,6 @@
       # Main overlay providing Gambit build functions
       overlays.default = import ./nix/overlay.nix;
 
-      # Library functions for external use
-      lib = import ./nix/lib.nix;
-
       # Templates for new Gambit projects
       templates = {
         app = {
