@@ -6,6 +6,7 @@
   version ? "0.1.0",
   dependencies ? [ ],
   gambit ? pkgs.gambit,
+  cc ? null,
   buildInputs ? [ ],
   nativeBuildInputs ? [ ],
   buildPhase ? null,
@@ -18,13 +19,14 @@ let
   # Flake inputs are resolved to packages.${system}.default.
   resolveDep = dep: if dep ? packages then dep.packages.${pkgs.system}.default else dep;
   resolvedDeps = map resolveDep dependencies;
+  useCustomCC = cc != null;
 in
 
 pkgs.stdenv.mkDerivation {
   pname = name;
   inherit version src;
 
-  nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
+  nativeBuildInputs = [ gambit ] ++ pkgs.lib.optional useCustomCC cc ++ nativeBuildInputs;
   buildInputs = buildInputs;
   propagatedBuildInputs = resolvedDeps;
 
@@ -45,6 +47,12 @@ pkgs.stdenv.mkDerivation {
     else
       ''
         runHook preBuild
+
+        ${pkgs.lib.optionalString useCustomCC ''
+          # Override C compiler for gsc -obj. BUILD_OBJ_CC_PARAM causes
+          # gambuild-C to use this compiler and clear GCC-specific flags.
+          export BUILD_OBJ_CC_PARAM="${pkgs.lib.getExe cc}"
+        ''}
 
         # Build -:search= flags from dependencies (for inter-library imports)
         SEARCH_FLAGS=""

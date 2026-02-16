@@ -23,10 +23,19 @@
           overlays = [ gambit-nix.overlays.default ];
         };
 
+        zigcc = pkgs.gambit-overlay.mkZigCC { };
+
         # Build the print library
         print-lib = pkgs.gambit-overlay.buildGambitLibrary {
           name = "print";
           src = ./lib;
+        };
+
+        # Build the print library with zig cc
+        print-lib-zig = pkgs.gambit-overlay.buildGambitLibrary {
+          name = "print";
+          src = ./lib;
+          cc = zigcc;
         };
       in
       {
@@ -36,6 +45,15 @@
             src = ./src;
             main = "app.scm";
             dependencies = [ print-lib ];
+          };
+
+          # Build with zig cc
+          hello-world-zig = pkgs.gambit-overlay.buildGambitApp {
+            name = "hello-world";
+            src = ./src;
+            main = "app.scm";
+            cc = zigcc;
+            dependencies = [ print-lib-zig ];
           };
 
           # Also expose the library

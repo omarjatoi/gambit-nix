@@ -8,5 +8,8 @@ final: prev: {
 
     # Create development shell with Gambit tooling
     gambitDevShell = import ./dev-shell.nix { pkgs = final; };
+
+    # Create a zig cc wrapper for use as the cc parameter
+    mkZigCC = import ./mk-zig-cc.nix { pkgs = final; };
   };
 }

@@ -7,6 +7,7 @@
   main ? "main.scm",
   dependencies ? [ ],
   gambit ? pkgs.gambit,
+  cc ? null,
   buildInputs ? [ ],
   nativeBuildInputs ? [ ],
   buildPhase ? null,
@@ -19,13 +20,14 @@ let
   # Flake inputs are resolved to packages.${system}.default.
   resolveDep = dep: if dep ? packages then dep.packages.${pkgs.system}.default else dep;
   resolvedDeps = map resolveDep dependencies;
+  useCustomCC = cc != null;
 in
 
 pkgs.stdenv.mkDerivation {
   pname = name;
   inherit version src;
 
-  nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
+  nativeBuildInputs = [ gambit ] ++ pkgs.lib.optional useCustomCC cc ++ nativeBuildInputs;
   buildInputs = resolvedDeps ++ buildInputs ++ [ pkgs.openssl ];
 
   LIBRARY_PATH = "${pkgs.lib.getLib pkgs.openssl}/lib";
@@ -36,6 +38,12 @@ pkgs.stdenv.mkDerivation {
     else
       ''
         runHook preBuild
+
+        ${pkgs.lib.optionalString useCustomCC ''
+          # Override C compiler for gsc -obj. BUILD_OBJ_CC_PARAM causes
+          # gambuild-C to use this compiler and clear GCC-specific flags.
+          export BUILD_OBJ_CC_PARAM="${pkgs.lib.getExe cc}"
+        ''}
 
         SEARCH_FLAGS=""
         DEP_C_FILES=""
@@ -73,7 +81,9 @@ pkgs.stdenv.mkDerivation {
         echo "Linking ${name}..."
         # Final link: dep .o files (from store) + app .o + link .o
         GAMBIT_LIB="${gambit}/gambit/lib"
-        $CC $DEP_O_FILES "$APP_BASENAME.o" "''${APP_BASENAME}_.o" \
+        ${
+          if useCustomCC then "${pkgs.lib.getExe cc}" else "$CC"
+        } $DEP_O_FILES "$APP_BASENAME.o" "''${APP_BASENAME}_.o" \
           -L"$GAMBIT_LIB" -lgambit -o "${name}"
 
         runHook postBuild
