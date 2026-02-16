@@ -25,8 +25,8 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             gambit
-            nixfmt-rfc-style
-            nil # Nix LSP
+            nixfmt
+            nil
           ];
         };
       }
