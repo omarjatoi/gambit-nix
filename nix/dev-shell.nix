@@ -7,18 +7,26 @@
 , shellHook ? ""
 }:
 
+let
+  resolveDep = dep:
+    if dep ? packages
+    then dep.packages.${pkgs.system}.default
+    else dep;
+  resolvedDeps = map resolveDep dependencies;
+in
+
 pkgs.mkShell {
   inherit name;
 
   buildInputs = [
     gambit
     pkgs.rlwrap # Better REPL experience
-  ] ++ dependencies ++ extraPackages;
+  ] ++ resolvedDeps ++ extraPackages;
 
   shellHook = ''
     # Calculate search paths from dependencies
     GAMBIT_SEARCH_FLAGS=""
-    DEPENDENCIES="${toString dependencies}"
+    DEPENDENCIES="${toString resolvedDeps}"
 
     for dep in $DEPENDENCIES; do
       if [ -d "$dep/share/gambit/modules" ]; then

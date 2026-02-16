@@ -13,12 +13,22 @@
 , meta ? { }
 }:
 
+let
+  # Resolve dependencies: accept either a derivation or a flake input.
+  # Flake inputs are resolved to packages.${system}.default.
+  resolveDep = dep:
+    if dep ? packages
+    then dep.packages.${pkgs.system}.default
+    else dep;
+  resolvedDeps = map resolveDep dependencies;
+in
+
 pkgs.stdenv.mkDerivation {
   pname = name;
   inherit version src;
 
   nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
-  buildInputs = dependencies ++ buildInputs ++ [ pkgs.openssl ];
+  buildInputs = resolvedDeps ++ buildInputs ++ [ pkgs.openssl ];
 
   LIBRARY_PATH = "${pkgs.lib.getLib pkgs.openssl}/lib";
 

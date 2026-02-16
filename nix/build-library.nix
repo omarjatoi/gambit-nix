@@ -12,13 +12,23 @@
 , meta ? { }
 }:
 
+let
+  # Resolve dependencies: accept either a derivation or a flake input.
+  # Flake inputs are resolved to packages.${system}.default.
+  resolveDep = dep:
+    if dep ? packages
+    then dep.packages.${pkgs.system}.default
+    else dep;
+  resolvedDeps = map resolveDep dependencies;
+in
+
 pkgs.stdenv.mkDerivation {
   pname = name;
   inherit version src;
 
   nativeBuildInputs = [ gambit ] ++ nativeBuildInputs;
   buildInputs = buildInputs;
-  propagatedBuildInputs = dependencies;
+  propagatedBuildInputs = resolvedDeps;
 
   # This setup hook ensures that this library's path is added to GAMBIT_LOAD_PATH
   # when it is used as a dependency.
@@ -40,7 +50,7 @@ pkgs.stdenv.mkDerivation {
       if [ -d "${dep}/share/gambit/modules" ]; then
         SEARCH_FLAGS="$SEARCH_FLAGS,search=${dep}/share/gambit/modules"
       fi
-    '') dependencies}
+    '') resolvedDeps}
 
     mkdir -p build_artifacts
 

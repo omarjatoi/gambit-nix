@@ -48,20 +48,20 @@ my-app = pkgs.gambit-overlay.buildGambitApp {
 
 The app build compiles only the application source. Pre-compiled dependency objects are linked directly from the Nix store without recompilation.
 
-### Git Dependencies
+### Dependencies
 
-Include libraries from Git repositories by adding them to your `flake.nix` inputs.
+The `dependencies` list accepts both derivations and flake inputs. Flake inputs are automatically resolved to `packages.${system}.default`.
 
-**Library is a Nix Flake:**
+**Flake dependency** (has its own `buildGambitLibrary`):
 
 ```nix
 inputs.some-lib.url = "github:user/repo";
 
-# inside buildGambitApp:
-dependencies = [ inputs.some-lib.packages.${system}.default ];
+# inside buildGambitApp or buildGambitLibrary:
+dependencies = [ inputs.some-lib ];
 ```
 
-**Non-Nix Gambit library:**
+**Non-Nix Gambit library** (raw `.sld` source):
 
 ```nix
 inputs.some-lib-src.url = "github:user/repo";
@@ -71,6 +71,9 @@ some-lib = pkgs.gambit-overlay.buildGambitLibrary {
   name = "some-lib";
   src = inputs.some-lib-src;
 };
+
+# then use in dependencies:
+dependencies = [ some-lib ];
 ```
 
 ### Development Shell
