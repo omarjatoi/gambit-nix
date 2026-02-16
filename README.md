@@ -26,7 +26,8 @@ pkgs = import nixpkgs {
 
 ### Libraries
 
-Libraries must use R7RS `define-library` in `.sld` files. The build compiles each `.sld` to C and object files for static linking, and installs the sources for downstream import resolution.
+Libraries must use R7RS `define-library` in `.sld` files. The build compiles each `.sld` to C and object files for static linking,
+and installs the sources for downstream import resolution.
 
 ```nix
 my-lib = pkgs.gambit-overlay.buildGambitLibrary {
@@ -92,6 +93,18 @@ $ gsi
 > (my-function ...)
 ```
 
+### Templates
+
+Flake templates to quickly scaffold new Gambit projects:
+
+```
+# New application project
+nix flake init -t github:omarjatoi/gambit-nix#app
+
+# New library project
+nix flake init -t github:omarjatoi/gambit-nix#library
+```
+
 ## License
 
 Licensed under either of
@@ -103,4 +116,5 @@ at your option.
 
 ### Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license,
+shall be dual licensed as above, without any additional terms or conditions.
